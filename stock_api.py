@@ -13,18 +13,24 @@ def get_stock_data(ticker: str):
         stock = yf.Ticker(ticker)
         info = stock.info
 
-        # DEBUG: Print full data response (for troubleshooting)
-        print("Full stock info:", info)
+        # Extract data, ensuring defaults for missing values
+        pe_ratio = info.get("trailingPE")
+        revenue_growth = info.get("revenueGrowth")
 
-        if not info or "shortName" not in info:
-            return {"error": "No data available for this ticker. Check the symbol."}
+        # Calculate PEG Ratio manually if missing
+        if info.get("pegRatio") is not None:
+            peg_ratio = info["pegRatio"]
+        elif pe_ratio and revenue_growth and revenue_growth > 0:
+            peg_ratio = round(pe_ratio / (revenue_growth * 100), 2)  # Convert growth % for correct calculation
+        else:
+            peg_ratio = "Not available"
 
         return {
             "ticker": ticker.upper(),
             "company": info.get("shortName", "Not found"),
-            "revenueGrowth": info.get("revenueGrowth", "Not found"),
-            "peRatio": info.get("trailingPE", "Not found"),
-            "pegRatio": info.get("pegRatio", "Not found"),
+            "revenueGrowth": revenue_growth,
+            "peRatio": pe_ratio,
+            "pegRatio": peg_ratio,
             "roe": info.get("returnOnEquity", "Not found"),
             "quickRatio": info.get("quickRatio", "Not found"),
         }
